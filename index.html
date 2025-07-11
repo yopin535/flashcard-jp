@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css" />
+
+  <title>Flashcard App</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 2rem;
+    }
+    .btn {
+      display: block;
+      margin: 1rem auto;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 8px;
+      background: #363636;
+      color: white;
+      cursor: pointer;
+      width: 100%;
+      max-width: 300px;
+    }
+    .btn:hover {
+      background: #4b4b4b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pilih Flashcard</h1>
+    <button class="btn" onclick="location.href='kanji.html'">Flashcard Kanji</button>
+    <button class="btn" onclick="location.href='kosakata.html'">Flashcard Kosakata</button>
+  </div>
+</body>
+</html>

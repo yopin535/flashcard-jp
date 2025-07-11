@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcard Kosakata</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container" id="upload-section">
+    <h2>Flashcard Kosakata</h2>
+    <label for="fileSelector">Pilih File:</label>
+    <select id="fileSelector"></select>
+
+    <label for="sheetSelector">Pilih Sheet:</label>
+    <select id="sheetSelector"><option value="">-- Pilih Sheet --</option></select>
+
+    <div style="margin-bottom: 1rem;">
+      Tampilkan <input type="number" id="limitInput" value="10" min="1" /> data per halaman /
+      Total: <span id="totalCount">0</span>
+    </div>
+    <div class="grid" id="kanjiGrid"></div>
+    <div class="paging-buttons">
+      <button id="prevPageBtn"><--</button>
+      <span id="pageInfo">Halaman 1 / 1</span>
+      <button id="nextPageBtn">--></button>
+    </div>
+    <div class="start-buttons">
+      <button id="loadButton">Flash Card Mode</button>
+      <button onclick="window.location.href='index.html'">Halaman Utama</button>
+    </div>
+  </div>
+
+  <!-- Flashcard Section -->
+  <div class="container flashcard" id="flashcard-section" style="display: none;">
+    <div class="flashcard-header">
+      <div class="left"><button id="backBtn">Kembali</button></div>
+      <div class="center" id="counter">1 / 10</div>
+      <div class="right" id="hafalStatus"></div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="inner-card" id="innerCard">
+        <div class="front" id="cardFront"></div>
+        <div class="back" id="cardBack"></div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prevBtn">&#60;</button>
+      <button id="shuffleBtn">Acak</button>
+      <button id="nextBtn">&#62;</button>
+    </div>
+
+    <div class="label-controls">
+      <button onclick="resetHafalan()">Reset Hafalan</button>
+      <button id="markKnown">Sudah Hafal</button>
+      <button id="markUnknown">Belum Hafal</button>
+      <select id="filterSelect">
+        <option value="all">Semua</option>
+        <option value="known">Sudah Hafal</option>
+        <option value="unknown">Belum Hafal</option>
+      </select>
+    </div>
+
+    <div class="utility-button">
+        <button id="settingToggle">Pengaturan</button>
+      <label for="autoTimeInput">Waktu (detik):</label>
+      <input type="number" id="autoTimeInput" value="5" min="1" style="width: 60px;">
+      <button id="autoToggleBtn">Aktifkan Auto Mode</button>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="popup-settings" id="popupSettings"></div>
+
+  </div>
+
+  <script src="script-kosakata.js"></script>
+</body>
+</html>

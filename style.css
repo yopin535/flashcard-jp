@@ -1,0 +1,273 @@
+body {
+  font-family: sans-serif;
+  background: #f0f0f0;
+  margin: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  max-width: 600px;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.paging-buttons,
+.start-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.kanji {
+  background: #f5f5f5;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border-radius: 8px;
+  min-width: 60px;
+  flex: 0 1 auto;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.flashcard {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+
+.card {
+  width: 300px;
+  height: 500px;
+  perspective: 1000px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inner-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.3s;
+}
+
+.card.flip .inner-card {
+  transform: rotateY(180deg);
+}
+
+.front, .back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1rem;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+}
+
+.front {
+  font-size: 30pt;
+}
+
+.back {
+  transform: rotateY(180deg);
+  align-items: flex-start;
+}
+
+.back pre {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.nav-buttons,
+.label-controls,
+.utility-button {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #363636;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #505050;
+}
+
+input[type="number"] {
+  width: 60px;
+}
+
+.flashcard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.flashcard-header .left,
+.flashcard-header .right {
+  flex: 1;
+}
+
+.flashcard-header .center {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.center-info {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 998;
+}
+
+.popup-settings {
+  display: none;
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  z-index: 999;
+  width: 300px;
+}
+
+.popup-settings label {
+  display: block;
+  margin: 5px 0;
+}
+
+.popup-settings button {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Quiz style */
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.quiz-option {
+  padding: 0.7rem 1rem;
+  border: 2px solid #aaa;
+  background: none;
+  color: #333;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 5px 0;
+  width: 100%;
+  text-align: left;
+  transition: border-color 0.3s;
+}
+
+.quiz-option.correct {
+  border-color: green;
+  color: green;
+}
+
+.quiz-option.wrong {
+  border-color: red;
+  color: red;
+}
+
+.quiz-option.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .flashcard-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card {
+    width: 90vw;
+    max-width: 300px;
+    height: 70vh;
+    max-height: 500px;
+  }
+
+  .front {
+    font-size: 35pt;
+  }
+
+  .nav-buttons,
+  .label-controls,
+  .utility-button {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  button {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .popup-settings {
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .container {
+    padding: 0.5rem;
+  }
+}

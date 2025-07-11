@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcard Kanji</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container" id="upload-section">
+    <h2>Flashcard Kanji</h2>
+    <div style="margin-bottom: 1rem;">
+      Tampilkan <input type="number" id="limitInput" value="10" min="1" /> data per halaman /
+      Total: <span id="totalCount">0</span>
+    </div>
+    <div class="grid" id="kanjiGrid"></div>
+    <div class="paging-buttons">
+      <button id="prevPageBtn">Sebelumnya</button>
+      <span id="pageInfo">Halaman 1 / 1</span>
+      <button id="nextPageBtn">Berikutnya</button>
+    </div>
+    <div class="start-buttons">
+      <button id="loadButton">Flash Card Mode</button>
+      <button id="quizButton">Kuis Mode</button>
+      <button onclick="window.location.href='index.html'">Kembali ke Halaman Utama</button>
+    </div>
+  </div>
+
+  <!-- Flashcard Section -->
+  <div class="container flashcard" id="flashcard-section" style="display: none;">
+    <div class="flashcard-header">
+      <div class="left"><button id="backBtn">Kembali</button></div>
+      <div class="center" id="counter">1 / 10</div>
+      <div class="right" id="hafalStatus"></div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="inner-card" id="innerCard">
+        <div class="front" id="cardFront"></div>
+        <div class="back" id="cardBack"></div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prevBtn">&#60;</button>
+      <button id="shuffleBtn">Acak</button>
+      <button id="nextBtn">&#62;</button>
+    </div>
+
+    <div class="label-controls">
+      <button onclick="resetHafalan()">Reset Hafalan</button>
+      <button id="markKnown">Sudah Hafal</button>
+      <button id="markUnknown">Belum Hafal</button>
+      <select id="filterSelect">
+        <option value="all">Semua</option>
+        <option value="known">Sudah Hafal</option>
+        <option value="unknown">Belum Hafal</option>
+      </select>
+    </div>
+
+    <div class="utility-button">
+      <button id="settingToggle">Pengaturan</button>
+      <label for="autoTimeInput">Waktu (detik):</label>
+      <input type="number" id="autoTimeInput" value="5" min="1" style="width: 60px;">
+      <button id="autoToggleBtn">Aktifkan Auto Mode</button>
+      <button id="settingToggle">Pengaturan</button>
+    </div>
+  </div>
+
+  <!-- Kuis Section -->
+  <div class="container" id="quiz-section" style="display: none;">
+    <div class="quiz-header">
+      <h3 style="flex: 1;">Pilih jawaban yang sesuai</h3>
+      <div id="quiz-counter" style="font-size: 0.9rem; text-align: right; color: #555;"></div>
+    </div>
+    <div id="quizQuestion" style="font-size: 2rem; text-align:center; margin-bottom:1rem;"></div>
+    <div id="quizOptions" style="display:flex; flex-direction:column; gap:10px;"></div>
+    <div id="quizFeedback" style="margin-top:1rem; text-align:center;"></div>
+    <div class="nav-buttons">
+      <button id="nextQuizBtn" style="display:none;">Soal Selanjutnya</button>
+      <button id="exitQuizBtn">Keluar</button>
+    </div>
+  </div>
+
+  <!-- Overlay & Settings -->
+  <div class="overlay" id="overlay"></div>
+  <div class="popup-settings" id="popupSettings"></div>
+
+  <script src="script-kanji.js"></script>
+</body>
+</html>
