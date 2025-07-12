@@ -6,6 +6,10 @@ const sheetSelector = document.getElementById("sheetSelector");
 
 let currentSheet = "", currentFileId = "";
 
+let autoMode = false;
+let autoTime = 5;
+let autoTimer = null;
+
 let mode = "kanji";
 let kanjiData = [], displayData = [], currentIndex = 0, pageIndex = 0;
 let hafalStatusMap = {}, filteredIndexes = [], filterMode = "all";
@@ -307,6 +311,41 @@ function toggleSettings() {
 
 function saveSettings() {
   localStorage.setItem("kanjiSettings", JSON.stringify(savedSettings));
+}
+
+document.getElementById("autoToggleBtn").onclick = () => {
+  autoMode = !autoMode;
+  document.getElementById("autoToggleBtn").textContent = autoMode ? "Nonaktifkan Auto Mode" : "Aktifkan Auto Mode";
+  if (autoMode) startAutoFlip(); else stopAutoFlip();
+};
+
+document.getElementById("autoTimeInput").addEventListener("input", e => {
+  autoTime = parseInt(e.target.value) || 5;
+  if (autoMode) {
+    stopAutoFlip();
+    startAutoFlip();
+  }
+});
+
+function startAutoFlip() {
+  const halfTime = (autoTime / 2) * 1000;
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(() => {
+    card.classList.add("flip");
+    setTimeout(() => {
+      if (currentIndex < filteredIndexes.length - 1) {
+        currentIndex++;
+      } else {
+        currentIndex = 0;
+      }
+      showCard();
+      card.classList.remove("flip");
+    }, halfTime);
+  }, autoTime * 1000);
+}
+
+function stopAutoFlip() {
+  if (autoTimer) clearInterval(autoTimer);
 }
 
 document.getElementById("settingToggle").onclick = toggleSettings;
