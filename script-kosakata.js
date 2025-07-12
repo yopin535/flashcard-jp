@@ -46,9 +46,12 @@ fetch(`https://sheets.googleapis.com/v4/spreadsheets/${MASTER_LIST_ID}/values/da
     const headers = rows[0];
     const fileIdIndex = headers.indexOf("file_id");
     const labelIndex = headers.indexOf("label");
+    const jenisIndex = headers.indexOf("jenis");
 
     fileSelector.innerHTML = `<option value="">-- Pilih File --</option>`;
     rows.slice(1).forEach(row => {
+      if (row[jenisIndex] !== "kosakata") return; // ⛔ skip jika bukan kosakata
+
       const fileId = row[fileIdIndex];
       const label = row[labelIndex];
       const opt = document.createElement("option");
@@ -56,6 +59,7 @@ fetch(`https://sheets.googleapis.com/v4/spreadsheets/${MASTER_LIST_ID}/values/da
       opt.textContent = label;
       fileSelector.appendChild(opt);
     });
+
   });
 
 // 🔁 Saat file dipilih → ambil sheet-nya
@@ -68,7 +72,7 @@ fileSelector.addEventListener("change", () => {
     .then(res => res.json())
     .then(data => {
       if (Array.isArray(data.sheets)) {
-        sheetSelector.innerHTML = `<option value="">-- Pilih Sheet --</option>`;
+        sheetSelector.innerHTML = `<option value="">-- Pilih Data --</option>`;
         data.sheets.forEach(s => {
           const opt = document.createElement("option");
           opt.value = s.properties.title;
@@ -224,17 +228,17 @@ function showCard() {
   const setting = savedSettings.kosakata;
   let frontHTML = `<div style="font-size: 1.8rem;">${kosa}</div>`;
   if (setting.kanji && hira !== "-") {
-    frontHTML += `<div style="margin-top: 0.5rem; font-size: 1rem;">${hira}</div>`;
+    frontHTML += `<div style="margin-top: 0.5rem; font-size: 1.3rem;">${hira}</div>`;
   }
   if (setting.arti && arti !== "-") {
-    frontHTML += `<div style="margin-top: 0.3rem; font-size: 1rem;">${arti}</div>`;
+    frontHTML += `<div style="margin-top: 0.3rem; font-size: 1.3rem;">${arti}</div>`;
   }
   cardFront.innerHTML = frontHTML;
 
   cardBack.innerHTML = `
-    <div class="center-info" style="font-size: 1.5rem;">${kosa}</div>
-    <div class="center-info">${hira}</div>
-    <div class="center-info">${arti}</div>
+    <div class="center-info" style="font-size: 1.8rem;">${kosa}</div>
+    <div class="center-info" style="font-size: 1.3rem;">${hira}</div>
+    <div class="center-info" style="font-size: 1rem;">${arti}</div>
     <div style="margin-top: 1rem;"><strong>Contoh Kalimat:</strong><br><pre>${kalimat}</pre></div>
   `;
 
