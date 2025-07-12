@@ -9,11 +9,13 @@
 <body>
   <div class="container" id="upload-section">
     <h2>Flashcard Kosakata</h2>
-    <label for="fileSelector">Pilih File:</label>
-    <select id="fileSelector"></select>
+    <div class="form-area">
+      <label for="fileSelector">Pilih File:</label>
+      <select id="fileSelector"></select>
 
-    <label for="sheetSelector">Pilih Sheet:</label>
-    <select id="sheetSelector"><option value="">-- Pilih Sheet --</option></select>
+      <label for="sheetSelector">Pilih Data:</label>
+      <select id="sheetSelector"></select>
+    </div>
 
     <div style="margin-bottom: 1rem;">
       Tampilkan <input type="number" id="limitInput" value="10" min="1" /> data per halaman /
