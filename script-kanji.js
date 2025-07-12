@@ -1,3 +1,11 @@
+const API_KEY = "AIzaSyAHX99hr1pn46Iar5oW3hzsK_2I7pKgUMA";
+const MASTER_LIST_ID = "1TdRFPDT_j_9i7h2IptHqkvlsD-r5DwOh3xh--0mAlDA";
+
+const fileSelector = document.getElementById("fileSelector");
+const sheetSelector = document.getElementById("sheetSelector");
+
+let currentSheet = "", currentFileId = "";
+
 let mode = "kanji";
 let kanjiData = [], displayData = [], currentIndex = 0, pageIndex = 0;
 let hafalStatusMap = {}, filteredIndexes = [], filterMode = "all";
@@ -31,18 +39,81 @@ const pageInfo = document.getElementById("pageInfo");
 const filterSelect = document.getElementById("filterSelect");
 const hafalStatusText = document.getElementById("hafalStatus");
 
-const sheetURL = `https://gsx2json.com/api?id=1_RpNeKghf2p5JycNnY1LhcKSraAayg5sq7Mp2Ip39Tw&sheet=kanji`;
-
-fetch(sheetURL)
+// Ambil daftar file dari daftar_file, filter jenis=kanji
+fetch(`https://sheets.googleapis.com/v4/spreadsheets/${MASTER_LIST_ID}/values/daftar_file?key=${API_KEY}`)
   .then(res => res.json())
-  .then(result => {
-    kanjiData = result.rows || [];
-    pageIndex = 0;
-    const saved = localStorage.getItem(currentFileKey);
-    hafalStatusMap = saved ? JSON.parse(saved) : {};
-    totalCount.textContent = kanjiData.length;
-    renderGrid();
+  .then(data => {
+    const rows = data.values;
+    if (!rows || rows.length < 2) return;
+    const headers = rows[0];
+    const fileIdIndex = headers.indexOf("file_id");
+    const labelIndex = headers.indexOf("label");
+    const jenisIndex = headers.indexOf("jenis");
+
+    fileSelector.innerHTML = `<option value="">-- Pilih File --</option>`;
+    rows.slice(1).forEach(row => {
+      if (row[jenisIndex] !== "kanji") return;
+      const fileId = row[fileIdIndex];
+      const label = row[labelIndex];
+      const opt = document.createElement("option");
+      opt.value = fileId;
+      opt.textContent = label;
+      fileSelector.appendChild(opt);
+    });
   });
+
+fileSelector.addEventListener("change", () => {
+  const fileId = fileSelector.value;
+  currentFileId = fileId;
+  if (!fileId) return;
+
+  fetch(`https://sheets.googleapis.com/v4/spreadsheets/${fileId}?fields=sheets.properties&key=${API_KEY}`)
+    .then(res => res.json())
+    .then(data => {
+      if (Array.isArray(data.sheets)) {
+        sheetSelector.innerHTML = `<option value="">-- Pilih Sheet --</option>`;
+        data.sheets.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.properties.title;
+          opt.textContent = s.properties.title;
+          sheetSelector.appendChild(opt);
+        });
+      }
+    });
+});
+
+sheetSelector.addEventListener("change", () => {
+  const sheetName = sheetSelector.value;
+  if (!currentFileId || !sheetName) return;
+
+  currentSheet = sheetName;
+  currentFileKey = `hafalStatus_${currentFileId}_${sheetName}`;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${currentFileId}/values/${sheetName}?key=${API_KEY}`;
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const values = data.values;
+      if (!values || values.length < 2) {
+        kanjiData = [];
+        renderGrid();
+        return;
+      }
+
+      const headers = values[0];
+      kanjiData = values.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((h, i) => obj[h.trim()] = row[i] || "");
+        return obj;
+      });
+
+      const saved = localStorage.getItem(currentFileKey);
+      hafalStatusMap = saved ? JSON.parse(saved) : {};
+      pageIndex = 0;
+      totalCount.textContent = kanjiData.length;
+      renderGrid();
+    });
+});
 
 limitInput.addEventListener("input", () => { pageIndex = 0; renderGrid(); });
 document.getElementById("prevPageBtn").onclick = () => { if (pageIndex > 0) { pageIndex--; renderGrid(); } };
@@ -137,8 +208,8 @@ function showCard() {
   const setting = savedSettings.kanji;
 
   const hurufKanji = data.kanji || data["Huruf"] || "-";
-  const onyomi = data["Onyomi"] || data.on || "-";
-  const kunyomi = data["Kunyomi"] || data.kun || "-";
+  const onyomi = data["onyomi"] || data.on || "-";
+  const kunyomi = data["kunyomi"] || data.kun || "-";
   const makna = data.makna || "-";
   const catatan = data.catatan || "-";
   const kosakata = data["Contoh kata"] || data.kosakata || "-";
@@ -157,9 +228,9 @@ function showCard() {
   cardFront.innerHTML = frontHTML;
 
   let backHTML = `<div class="center-info" style='font-size: 3rem;'>${hurufKanji}</div>`;
-  if (setting.onyomi) backHTML += `<div class="center-info">Onyomi: ${onyomi}</div>`;
-  if (setting.kunyomi) backHTML += `<div class="center-info">Kunyomi: ${kunyomi}</div>`;
-  if (setting.makna) backHTML += `<div class="center-info">Makna: ${makna}</div>`;
+  if (setting.onyomi) backHTML += `<div class="center-info">on: ${onyomi}</div>`;
+  if (setting.kunyomi) backHTML += `<div class="center-info">kun: ${kunyomi}</div>`;
+  if (setting.makna) backHTML += `<div class="center-info"> ${makna}</div>`;
   if (setting.catatan) backHTML += `<div><strong>Catatan:</strong><br>${catatan}</div>`;
   if (setting.kosakata) backHTML += `<div><strong>Contoh Kosakata:</strong><br>${kosakata}</div>`;
 
@@ -189,16 +260,16 @@ function renderSettingsOptions() {
   const currentFront = savedSettings.kanjiFront;
   const html = `
     <div><strong>Tampilan Belakang:</strong></div>
-    <label><input type="checkbox" class="setting-check" value="onyomi" ${current.onyomi ? "checked" : ""}> Tampilkan Onyomi</label>
-    <label><input type="checkbox" class="setting-check" value="kunyomi" ${current.kunyomi ? "checked" : ""}> Tampilkan Kunyomi</label>
+    <label><input type="checkbox" class="setting-check" value="onyomi" ${current.onyomi ? "checked" : ""}> Tampilkan onyomi</label>
+    <label><input type="checkbox" class="setting-check" value="kunyomi" ${current.kunyomi ? "checked" : ""}> Tampilkan kunyomi</label>
     <label><input type="checkbox" class="setting-check" value="makna" ${current.makna ? "checked" : ""}> Tampilkan Makna</label>
     <label><input type="checkbox" class="setting-check" value="catatan" ${current.catatan ? "checked" : ""}> Tampilkan Catatan</label>
     <label><input type="checkbox" class="setting-check" value="kosakata" ${current.kosakata ? "checked" : ""}> Tampilkan Contoh Kosakata</label>
 
     <hr style="margin: 1rem 0;">
     <div><strong>Tampilan Depan:</strong></div>
-    <label><input type="checkbox" class="setting-front" value="onyomi" ${currentFront.onyomi ? "checked" : ""}> Onyomi</label>
-    <label><input type="checkbox" class="setting-front" value="kunyomi" ${currentFront.kunyomi ? "checked" : ""}> Kunyomi</label>
+    <label><input type="checkbox" class="setting-front" value="onyomi" ${currentFront.onyomi ? "checked" : ""}> onyomi</label>
+    <label><input type="checkbox" class="setting-front" value="kunyomi" ${currentFront.kunyomi ? "checked" : ""}> kunyomi</label>
     <label><input type="checkbox" class="setting-front" value="makna" ${currentFront.makna ? "checked" : ""}> Makna</label>
 
     <button id="closeSettings">Tutup</button>
