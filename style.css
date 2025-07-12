@@ -18,6 +18,13 @@ body {
   margin-bottom: 2rem;
 }
 
+.form-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .grid {
   display: flex;
   flex-wrap: wrap;
