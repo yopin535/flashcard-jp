@@ -9,6 +9,14 @@
 <body>
   <div class="container" id="upload-section">
     <h2>Flashcard Kanji</h2>
+    <div class="form-area">
+      <label for="fileSelector">Pilih File:</label>
+      <select id="fileSelector"></select>
+
+      <label for="sheetSelector">Pilih Sheet:</label>
+      <select id="sheetSelector"><option value="">-- Pilih Sheet --</option></select>
+    </div>
+    
     <div style="margin-bottom: 1rem;">
       Tampilkan <input type="number" id="limitInput" value="10" min="1" /> data per halaman /
       Total: <span id="totalCount">0</span>
@@ -63,7 +71,6 @@
       <label for="autoTimeInput">Waktu (detik):</label>
       <input type="number" id="autoTimeInput" value="5" min="1" style="width: 60px;">
       <button id="autoToggleBtn">Aktifkan Auto Mode</button>
-      <button id="settingToggle">Pengaturan</button>
     </div>
   </div>
 
