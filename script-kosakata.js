@@ -15,6 +15,8 @@ let savedSettings = JSON.parse(localStorage.getItem("kosakataSettings")) || {
   }
 };
 
+let currentMode = "default"; // nilai bisa: "default", "flashcard", "quiz"
+
 const limitInput = document.getElementById("limitInput");
 const totalCount = document.getElementById("totalCount");
 const loadButton = document.getElementById("loadButton");
@@ -36,6 +38,15 @@ const popupSettings = document.getElementById("popupSettings");
 let autoMode = false;
 let autoTime = 5;
 let autoTimer = null;
+
+let quizData = [];
+let currentQuizIndex = 0;
+let quizScore = 0;
+let quizAnswers = [];
+let quizMode = "random";
+
+let quizSourceData = [];
+let wasInFlashcardMode = false;
 
 // 🔁 Ambil daftar file dari spreadsheet
 fetch(`https://sheets.googleapis.com/v4/spreadsheets/${MASTER_LIST_ID}/values/daftar_file?key=${API_KEY}`)
@@ -124,6 +135,7 @@ document.getElementById("nextPageBtn").onclick = () => {
 };
 
 loadButton.onclick = () => {
+  currentMode = "flashcard";
   uploadSection.style.display = "none";
   flashcardSection.style.display = "flex";
   currentIndex = 0;
@@ -166,12 +178,160 @@ document.getElementById("autoTimeInput").addEventListener("input", e => {
   autoTime = parseInt(e.target.value) || 5;
   if (autoMode) { stopAutoFlip(); startAutoFlip(); }
 });
+document.getElementById("quizButton").onclick = () => {
+  document.getElementById("quiz-popup").style.display = "flex";
+};
+
+document.getElementById("startQuizBtn").onclick = () => {
+  currentMode = "quiz";
+  const currentPageData = getCurrentPageData();
+  quizSourceData = currentPageData;
+  quizMode = document.getElementById("quizModeSelector").value;
+  if (kosakataData.length < 5) {
+    alert("Data terlalu sedikit. Tampilkan setidaknya 5 entri.");
+    return;
+  }
+
+  // Sembunyikan tampilan lain
+  document.getElementById("quiz-popup").style.display = "none";
+  document.getElementById("kanjiGrid").style.display = "none";
+  document.getElementById("flashcard-section").style.display = "none";
+  document.getElementById("upload-section").style.display = "none";
+  document.getElementById("quiz-section").classList.add("fullscreen-section");
+
+  const shuffled = [...currentPageData].sort(() => Math.random() - 0.5);
+
+  quizSourceData = currentPageData; // Tambahkan ini global
+  quizData = shuffled.map(item => getQuizQuestion(item, quizMode));
+  currentQuizIndex = 0;
+  quizScore = 0;
+  quizAnswers = [];
+
+  showQuizQuestion();
+};
+
+function closeQuizPopup() {
+  document.getElementById("quiz-popup").style.display = "none";
+}
 
 settingToggle.onclick = toggleSettings;
 overlay.onclick = toggleSettings;
 
+function getQuizQuestion(data, mode) {
+  const get = (item, field) => item[field] || item["kosakata"] || "-";
+  const q = {};
+  const fields = {
+    "kosakata-kanji": ["kosakata", "kanji"],
+    "kosakata-arti": ["kosakata", "arti"],
+    "kanji-kosakata": ["kanji", "kosakata"],
+    "kanji-arti": ["kanji", "arti"],
+    "arti-kosakata": ["arti", "kosakata"],
+    "arti-kanji": ["arti", "kanji"]
+  };
+
+  if (mode === "random") {
+    const allModes = Object.keys(fields);
+    mode = allModes[Math.floor(Math.random() * allModes.length)];
+  }
+
+  const [from, to] = fields[mode] || ["kosakata", "arti"];
+  q.question = get(data, from);
+  q.answer = get(data, to);
+  q.mode = mode;
+  return q;
+}
+
+function showQuizQuestion() {
+  const container = document.getElementById("quiz-container");
+  const q = quizData[currentQuizIndex];
+
+  // Buat pilihan jawaban acak
+  let options = [q.answer];
+  while (options.length < 4) {
+    const random = quizSourceData[Math.floor(Math.random() * quizSourceData.length)];
+    const alt = getQuizQuestion(random, q.mode).answer;
+    if (!options.includes(alt)) options.push(alt);
+  }
+  options = options.sort(() => Math.random() - 0.5);
+
+  // Buat tampilan soal
+  container.innerHTML = `
+    <h3>Soal ${currentQuizIndex + 1} dari ${quizData.length}</h3>
+    <p style="text-align: center; font-size: 1.2rem;"><strong>${q.question}</strong></p>
+    ${options.map(opt => `
+      <button class="quiz-option" onclick="submitQuizAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+    `).join("")}
+  `;
+}
+
+function submitQuizAnswer(selected) {
+  const current = quizData[currentQuizIndex];
+  const correct = current.answer;
+
+  const benar = selected === correct;
+  if (benar) quizScore++;
+
+  quizAnswers.push({
+    question: current.question,
+    selected,
+    correct,
+    benar
+  });
+
+  currentQuizIndex++;
+  if (currentQuizIndex < quizData.length) {
+    showQuizQuestion();
+  } else {
+    showQuizResult();
+  }
+}
+
+function exitQuizMode() {
+  document.getElementById("quiz-section").classList.remove("fullscreen-section");
+  document.getElementById("quiz-section").style.display = "none";
+  document.getElementById("upload-section").style.display = "block";
+
+  // Reset tampilan mode
+  flashcardSection.style.display = "none";
+  kanjiGrid.style.display = "none";
+
+  if (currentMode === "flashcard") {
+    flashcardSection.style.display = "block";
+    showCard();
+  } else {
+    kanjiGrid.style.display = "grid";
+    currentMode = "default"; // kembali ke mode normal
+    applyFilter();
+    updatePagination();
+    renderGrid();
+  }
+}
+
+function showQuizResult() {
+  const container = document.getElementById("quiz-container");
+  container.innerHTML = `
+    <h2>Skor Akhir: ${quizScore} / ${quizData.length}</h2>
+    <hr>
+    ${quizAnswers.map((a, i) => `
+      <div>
+        <p><strong>Soal ${i + 1}:</strong> ${a.question}</p>
+        <p>Jawabanmu: <span style="color:${a.benar ? 'green' : 'red'}">${a.selected}</span></p>
+        ${!a.benar ? `<p>Jawaban benar: <strong>${a.correct}</strong></p>` : ""}
+        <hr>
+      </div>
+    `).join("")}
+    <button onclick="exitQuizMode()">Kembali</button>
+  `;
+}
+
 function renderGrid() {
   kanjiGrid.innerHTML = "";
+
+  // Pastikan layout dan tampilan aktif
+  kanjiGrid.classList.remove("hidden");
+  kanjiGrid.classList.add("grid-container");
+  kanjiGrid.style.display = "grid";
+
   const limit = parseInt(limitInput.value) || 10;
   const start = pageIndex * limit;
   const end = Math.min(start + limit, kosakataData.length);
@@ -179,7 +339,7 @@ function renderGrid() {
 
   for (let data of displayData) {
     const div = document.createElement("div");
-    div.className = "kanji";
+    div.className = "grid-item";
     div.textContent = data.kosakata || data.Kosakata || "-";
     kanjiGrid.appendChild(div);
   }
@@ -206,6 +366,13 @@ function applyFilter() {
       filteredIndexes.push(globalIndex);
     }
   });
+}
+
+function getCurrentPageData() {
+  const limit = parseInt(limitInput.value) || 10;
+  const start = pageIndex * limit;
+  const end = Math.min(start + limit, kosakataData.length);
+  return kosakataData.slice(start, end);
 }
 
 function showCard() {
