@@ -8,16 +8,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flashcard Kosakata</title>
-  <link rel="stylesheet" href="style.css?v=7162025" />
+  <link rel="stylesheet" href="style.css?v=7192025" />
 </head>
 <body>
   <div class="container" id="upload-section">
     <h2>Flashcard Kosakata</h2>
     <div class="form-area">
-      <label for="fileSelector">Pilih File:</label>
+      <label for="fileSelector">Pilih Data</label>
       <select id="fileSelector"></select>
 
-      <label for="sheetSelector">Pilih Data:</label>
+      <label for="sheetSelector">Pilih Kategori</label>
       <select id="sheetSelector"></select>
     </div>
 
@@ -25,7 +25,13 @@
       Tampilkan <input type="number" id="limitInput" value="10" min="1" /> data per halaman /
       Total: <span id="totalCount">0</span>
     </div>
+
     <div id="kanjiGrid" class="grid-container"></div>
+
+    <p id="emptyMessage" class="empty-message hidden">
+      Silakan pilih file dan data terlebih dahulu.
+    </p>
+
     <div class="paging-buttons">
       <button id="prevPageBtn" style="transform: scaleX(-1);">➜</button>
       <span id="pageInfo">Halaman 1 / 1</span>
@@ -108,6 +114,6 @@
   </section>
 
 
-  <script src="script-kosakata.js?v=7162025"></script>
+  <script src="script-kosakata.js?v=7192025"></script>
 </body>
 </html>
