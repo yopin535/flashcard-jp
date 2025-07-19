@@ -29,6 +29,12 @@ let savedSettings = JSON.parse(localStorage.getItem("kanjiSettings")) || {
   }
 };
 
+let kanjiQuizData = [];
+let currentKanjiQuizIndex = 0;
+let kanjiQuizScore = 0;
+let kanjiQuizAnswers = [];
+let kanjiQuizMode = "type1";
+
 const limitInput = document.getElementById("limitInput");
 const totalCount = document.getElementById("totalCount");
 const loadButton = document.getElementById("loadButton");
@@ -327,6 +333,27 @@ document.getElementById("autoTimeInput").addEventListener("input", e => {
   }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("kanjiQuizBtn").onclick = () => {
+    const limit = parseInt(limitInput.value) || 10;
+    const start = pageIndex * limit;
+    const end = Math.min(start + limit, kanjiData.length);
+    const visibleData = kanjiData.slice(start, end);
+
+    if (visibleData.length < 5) {
+      alert("Minimal 5 data untuk memulai kuis.");
+      return;
+    }
+
+    document.getElementById("kanji-quiz-popup").style.display = "flex";
+  };
+});
+
+function closeKanjiQuizPopup() {
+  document.getElementById("kanji-quiz-popup").style.display = "none";
+}
+
+
 function startAutoFlip() {
   const halfTime = (autoTime / 2) * 1000;
   if (autoTimer) clearInterval(autoTimer);
@@ -346,6 +373,179 @@ function startAutoFlip() {
 
 function stopAutoFlip() {
   if (autoTimer) clearInterval(autoTimer);
+}
+
+function startKanjiQuiz(mode) {
+  console.log("⏯ Mulai kuis mode:", mode);
+  closeKanjiQuizPopup();
+
+  const validData = displayData.filter(d => {
+    if (mode === "type1") return d.kanji && d.makna;
+    if (mode === "type2") return d.kanji && d.makna;
+    return true;
+  });
+
+  if (validData.length < 5) {
+    alert("Minimal 5 data untuk kuis.");
+    return;
+  }
+
+  const shuffled = [...validData].sort(() => Math.random() - 0.5);
+  kanjiQuizData = shuffled.map(d => generateKanjiQuestion(d, mode)).filter(Boolean);
+  kanjiQuizAnswers = [];
+  currentKanjiQuizIndex = 0;
+  kanjiQuizScore = 0;
+
+  console.log("📊 Jumlah soal:", kanjiQuizData.length);
+  console.log("🧪 Soal pertama:", kanjiQuizData[0]);
+
+  document.getElementById("kanjiQuizSection").style.display = "block";
+  document.getElementById("upload-section").style.display = "none";
+  document.getElementById("flashcard-section").style.display = "none";
+
+  showKanjiQuestion();
+}
+
+function generateKanjiQuestion(data, mode) {
+  if (mode === "type1") {
+    return {
+      question: `${data.kanji || "-"}<br><small>【${data.onyomi || "-"} / ${data.kunyomi || "-"}</small>】`,
+      correct: data.makna || "-",
+      options: generateKanjiOptions("makna", data.makna),
+    };
+  } else if (mode === "type2") {
+    return {
+      question: data.makna || "-",
+      correct: data.kanji || "-",
+      options: generateKanjiOptions("kanji", data.kanji),
+    };
+  } else if (mode === "random") {
+    return Math.random() > 0.5
+      ? generateKanjiQuestion(data, "type1")
+      : generateKanjiQuestion(data, "type2");
+  }
+  return null;
+}
+
+function generateKanjiOptions(field, correctAnswer) {
+  const values = displayData
+    .map(d => d[field])
+    .filter(v => v && v.trim() !== "" && v !== correctAnswer);
+
+  const randomOptions = [...new Set(values)].sort(() => Math.random() - 0.5).slice(0, 3);
+  const allOptions = [...randomOptions, correctAnswer].sort(() => Math.random() - 0.5);
+  return allOptions;
+}
+
+function selectKanjiAnswer(selected) {
+  const soal = kanjiQuizData[currentKanjiQuizIndex];
+  const benar = selected === soal.correct;
+
+  if (benar) kanjiQuizScore++;
+
+  kanjiQuizAnswers.push({
+    soal: soal.question,
+    selected,
+    correct: soal.correct,
+    benar
+  });
+
+  currentKanjiQuizIndex++;
+  if (currentKanjiQuizIndex < kanjiQuizData.length) {
+    showKanjiQuestion();
+  } else {
+    showKanjiResult();
+  }
+}
+
+
+function showKanjiQuestion() {
+  const soal = kanjiQuizData[currentKanjiQuizIndex];
+  if (!soal) {
+    console.warn("❗ Tidak ada soal untuk ditampilkan.");
+    return;
+  }
+
+  console.log("📝 Tampilkan soal:", soal);
+
+  document.getElementById("kanjiQuizResult").style.display = "none";
+  document.getElementById("kanjiQuizQuestion").style.display = "block";
+  document.getElementById("kanjiQuizOptions").style.display = "block";
+
+  document.getElementById("kanjiQuizQuestion").innerHTML = soal.question;
+
+  const optionBox = document.getElementById("kanjiQuizOptions");
+  optionBox.innerHTML = "";
+
+  soal.options.forEach(option => {
+    const btn = document.createElement("button");
+    btn.textContent = option;
+    btn.className = "quiz-option";
+    btn.onclick = () => selectKanjiAnswer(option);
+    optionBox.appendChild(btn);
+  });
+}
+
+function submitKanjiAnswer(selected) {
+  const soal = kanjiQuizData[currentKanjiQuizIndex];
+  const benar = selected === soal.answer;
+
+  if (benar) kanjiQuizScore++;
+
+  kanjiQuizAnswers.push({
+    soal: soal.question,
+    selected,
+    correct: soal.answer,
+    benar
+  });
+
+  currentKanjiQuizIndex++;
+  if (currentKanjiQuizIndex < kanjiQuizData.length) {
+    showKanjiQuestion();
+  } else {
+    showKanjiResult();
+  }
+}
+function showKanjiResult() {
+  const questionEl = document.getElementById("kanjiQuizQuestion");
+  const optionsEl = document.getElementById("kanjiQuizOptions");
+  const resultEl = document.getElementById("kanjiQuizResult");
+
+  questionEl.style.display = "none";
+  optionsEl.style.display = "none";
+  resultEl.style.display = "block";
+
+  const score = kanjiQuizScore;
+  const total = kanjiQuizData.length;
+
+  let html = `<h3>Skor Akhir: ${score} / ${total}</h3><br>`;
+
+  kanjiQuizAnswers.forEach((entry, i) => {
+    const { soal, selected, correct, benar } = entry;
+
+    html += `<div><strong>Soal ${i + 1}:</strong><br>`;
+    html += `${soal}<br>`;
+    if (benar) {
+      html += `<span style="color:green;">Jawabanmu: ${selected}</span>`;
+    } else {
+      html += `<span style="color:red;">Jawabanmu: ${selected || '(kosong)'}</span><br>`;
+      html += `<span style="color:green;">Jawaban Benar: ${correct}</span>`;
+    }
+    html += `<hr></div>`;
+  });
+
+  resultEl.innerHTML = html;
+}
+
+
+function endKanjiQuiz() {
+  showKanjiResult();
+}
+
+function exitKanjiQuiz() {
+  document.getElementById("kanjiQuizSection").style.display = "none";
+  document.getElementById("upload-section").style.display = "block";
+  renderGrid();
 }
 
 document.getElementById("settingToggle").onclick = toggleSettings;
