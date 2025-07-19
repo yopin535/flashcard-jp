@@ -35,6 +35,8 @@ const settingToggle = document.getElementById("settingToggle");
 const overlay = document.getElementById("overlay");
 const popupSettings = document.getElementById("popupSettings");
 
+const emptyMessage = document.getElementById("emptyMessage");
+
 let autoMode = false;
 let autoTime = 5;
 let autoTimer = null;
@@ -327,9 +329,17 @@ function showQuizResult() {
 function renderGrid() {
   kanjiGrid.innerHTML = "";
 
-  // Pastikan layout dan tampilan aktif
-  kanjiGrid.classList.remove("hidden");
-  kanjiGrid.classList.add("grid-container");
+  const isDataKosong = !kosakataData || kosakataData.length === 0;
+
+  if (counter.textContent !== "0 / 0") {
+    kanjiGrid.style.display = "none";
+    emptyMessage.classList.remove("hidden");
+    pageInfo.textContent = "Halaman 1 / 1";
+    return;
+  }
+
+  // Jika ada data
+  emptyMessage.classList.add("hidden");
   kanjiGrid.style.display = "grid";
 
   const limit = parseInt(limitInput.value) || 10;
