@@ -329,14 +329,14 @@ function showQuizResult() {
 function renderGrid() {
   kanjiGrid.innerHTML = "";
 
-  const isDataKosong = !kosakataData || kosakataData.length === 0;
+  // const isDataKosong = !kosakataData || kosakataData.length === 0;
 
-  if (counter.textContent !== "0 / 0") {
-    kanjiGrid.style.display = "none";
-    emptyMessage.classList.remove("hidden");
-    pageInfo.textContent = "Halaman 1 / 1";
-    return;
-  }
+  // if (counter.textContent !== "0 / 0") {
+  //   kanjiGrid.style.display = "none";
+  //   emptyMessage.classList.remove("hidden");
+  //   pageInfo.textContent = "Halaman 1 / 1";
+  //   return;
+  // }
 
   // Jika ada data
   emptyMessage.classList.add("hidden");
