@@ -8,8 +8,14 @@ let kosakataData = [], displayData = [], currentIndex = 0, pageIndex = 0;
 let hafalStatusMap = {}, filteredIndexes = [], filterMode = "all";
 let currentFileKey = "", currentSheet = "", currentFileId = "";
 
+let showFrontKosakata = true; // default AKTIF
+let showFrontKanji = false;
+let showFrontArti = false;
+
+
 let savedSettings = JSON.parse(localStorage.getItem("kosakataSettings")) || {
   kosakata: {
+    kosakata: true,
     kanji: false,
     arti: false
   }
@@ -403,13 +409,17 @@ function showCard() {
   const kalimat = data["contoh kalimat"] || data.Kalimat || "-";
 
   const setting = savedSettings.kosakata;
-  let frontHTML = `<div style="font-size: 1.8rem;">${kosa}</div>`;
-  if (setting.kanji && hira !== "-") {
-    frontHTML += `<div style="margin-top: 0.5rem; font-size: 1.3rem;">${hira}</div>`;
-  }
-  if (setting.arti && arti !== "-") {
-    frontHTML += `<div style="margin-top: 0.3rem; font-size: 1.3rem;">${arti}</div>`;
-  }
+  let frontHTML = "";
+if (setting.kosakata && kosa !== "-") {
+  frontHTML += `<div style="font-size: 1.8rem;">${kosa}</div>`;
+}
+if (setting.kanji && hira !== "-") {
+  frontHTML += `<div style="margin-top: 0.5rem; font-size: 1.8rem;">${hira}</div>`;
+}
+if (setting.arti && arti !== "-") {
+  frontHTML += `<div style="margin-top: 0.3rem; font-size: 1.3rem;">${arti}</div>`;
+}
+
   cardFront.innerHTML = frontHTML;
 
   cardBack.innerHTML = `
@@ -443,28 +453,69 @@ function saveSettings() {
 
 function toggleSettings() {
   const isVisible = popupSettings.style.display === "block";
-  if (!isVisible) renderSettingsOptions();
+  if (!isVisible) renderSettingsPopup(); // ✅ UBAH INI
   popupSettings.style.display = overlay.style.display = isVisible ? "none" : "block";
 }
 
-function renderSettingsOptions() {
-  const current = savedSettings.kosakata;
-  const html = `
-    <label><input type="checkbox" class="setting-front" value="kanji" ${current.kanji ? "checked" : ""}> Tampilkan Kanji (Depan)</label>
-    <label><input type="checkbox" class="setting-front" value="arti" ${current.arti ? "checked" : ""}> Tampilkan Arti (Depan)</label>
-    <button id="closeSettings">Tutup</button>
+function renderSettingsPopup() {
+  const popup = document.getElementById("popupSettings");
+  popup.innerHTML = `
+    <h3>Pengaturan Tampilan (Depan)</h3>
+    <label><input type="checkbox" id="showFrontKosakata"> Tampilan kosakata (depan)</label><br>
+    <label><input type="checkbox" id="showFrontKanji"> Tampilan kanji (depan)</label><br>
+    <label><input type="checkbox" id="showFrontArti"> Tampilan arti (depan)</label><br>
+    <br>
+    <button id="popupCloseBtn" onclick="closeSettings()">Tutup</button>
   `;
-  popupSettings.innerHTML = html;
 
-  popupSettings.querySelectorAll("input[type=checkbox]").forEach(input => {
-    input.addEventListener("change", () => {
-      savedSettings.kosakata[input.value] = input.checked;
-      saveSettings();
-      showCard();
-    });
+  document.getElementById("showFrontKosakata").checked = savedSettings.kosakata.kosakata;
+  document.getElementById("showFrontKanji").checked = savedSettings.kosakata.kanji;
+  document.getElementById("showFrontArti").checked = savedSettings.kosakata.arti;
+
+  document.getElementById("showFrontKosakata").addEventListener("change", (e) => {
+    savedSettings.kosakata.kosakata = e.target.checked;
+    saveSettings();
+    showCard();
   });
+  document.getElementById("showFrontKanji").addEventListener("change", (e) => {
+    savedSettings.kosakata.kanji = e.target.checked;
+    saveSettings();
+    showCard();
+  });
+  document.getElementById("showFrontArti").addEventListener("change", (e) => {
+    savedSettings.kosakata.arti = e.target.checked;
+    saveSettings();
+    showCard();
+  });
+}
 
-  document.getElementById("closeSettings").onclick = toggleSettings;
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.id === "popupCloseBtn") {
+    toggleSettings();
+  }
+});
+
+function renderCard() {
+  if (filteredData.length === 0) return;
+
+  const item = filteredData[currentCardIndex];
+
+  // Depan
+  const frontItems = [];
+  if (showFrontKosakata) frontItems.push(item.kosakata);
+  if (showFrontKanji) frontItems.push(item.kanji);
+  if (showFrontArti) frontItems.push(item.arti);
+  cardFront.textContent = frontItems.join("\n");
+
+  // Belakang tetap tampil semua
+  cardBack.innerHTML = `
+    <div><strong>Kosakata:</strong> ${item.kosakata}</div>
+    <div><strong>Kanji:</strong> ${item.kanji}</div>
+    <div><strong>Arti:</strong> ${item.arti}</div>
+  `;
+
+  updateCounter();
+  updateHafalanStatus();
 }
 
 function startAutoFlip() {
