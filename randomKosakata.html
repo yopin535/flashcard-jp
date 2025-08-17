@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random List Picker</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .container { max-width: 400px; margin: auto; text-align: center; }
+        #result { 
+            width: 90%; 
+            height: 60px; 
+            font-size: 20px;
+            margin: 20px auto; 
+            padding: 10px; 
+            background-color: #f8d7da; 
+            border: 2px solid #721c24; 
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-weight: normal;
+        }
+        button { margin: 5px; padding: 18px; font-size: 22px; cursor: pointer; display: block; width: 100%; }
+        #pickButton, #resetButton { font-weight: bold; }
+        .button-container { display: flex; justify-content: space-between; gap: 10px; }
+        .list-buttons { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+        .list-buttons button { font-size: 18px; padding: 12px; font-weight: normal; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+        .checkbox-container { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        #listContainer { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Random List Picker</h1>
+        <div id="listContainer">
+            <textarea id="inputList" placeholder="Masukkan daftar item, satu per baris"></textarea>
+            <div class="list-buttons">
+                <button id="clearListButton" onclick="clearList()">Hapus Daftar</button>
+                <button onclick="setList()">Simpan Daftar</button>
+            </div>
+        </div>
+        <div class="checkbox-container">
+            <label>
+                <input type="checkbox" id="removePicked"> Hapus setelah dipilih
+            </label>
+            <label>
+                <input type="checkbox" id="hideList" onclick="toggleList()"> Sembunyikan daftar
+            </label>
+        </div>
+        <div id="result">Klik "Pilih" untuk memulai</div>
+        <div class="button-container">
+            <button id="resetButton" onclick="resetList()">Reset</button>
+            <button id="pickButton" onclick="pickRandom()">Pilih</button>
+        </div>
+    </div>
+    
+    <script>
+        let items = [];
+        let currentList = [];
+
+        function setList() {
+            items = document.getElementById("inputList").value.split("\n").map(item => item.trim()).filter(item => item !== "");
+            currentList = [...items];
+        }
+
+        function pickRandom() {
+            if (currentList.length === 0) {
+                document.getElementById("result").textContent = "Semua item telah dipilih!";
+                return;
+            }
+            let index = Math.floor(Math.random() * currentList.length);
+            let pickedItem = currentList[index];
+            document.getElementById("result").textContent = pickedItem;
+            
+            if (document.getElementById("removePicked").checked) {
+                currentList.splice(index, 1);
+            }
+        }
+
+        function resetList() {
+            currentList = [...items];
+            document.getElementById("result").textContent = "Klik \"Pilih\" untuk memulai";
+        }
+        
+        function clearList() {
+            document.getElementById("inputList").value = "";
+            items = [];
+            currentList = [];
+            document.getElementById("result").textContent = "Klik \"Pilih\" untuk memulai";
+        }
+
+        function toggleList() {
+            let listContainer = document.getElementById("listContainer");
+            listContainer.style.display = document.getElementById("hideList").checked ? "none" : "block";
+        }
+
+        // Pastikan daftar tetap tersembunyi jika checkbox sudah dicentang sebelumnya
+        window.onload = function() {
+            toggleList();
+        };
+    </script>
+</body>
+</html>
+
+}
+</body>
+</html>
+
+
+</body>
+</html>
+>
