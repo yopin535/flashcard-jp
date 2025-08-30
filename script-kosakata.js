@@ -12,14 +12,7 @@ let showFrontKosakata = true; // default AKTIF
 let showFrontKanji = false;
 let showFrontArti = false;
 
-
-let savedSettings = JSON.parse(localStorage.getItem("kosakataSettings")) || {
-  kosakata: {
-    kosakata: true,
-    kanji: false,
-    arti: false
-  }
-};
+let lastRandomField = null; // untuk menghindari field yang sama berurutan
 
 let currentMode = "default"; // nilai bisa: "default", "flashcard", "quiz"
 
@@ -410,6 +403,7 @@ function showCard() {
 
   const setting = savedSettings.kosakata;
   let frontHTML = "";
+
 if (setting.kosakata && kosa !== "-") {
   frontHTML += `<div style="font-size: 1.8rem;">${kosa}</div>`;
 }
@@ -419,6 +413,7 @@ if (setting.kanji && hira !== "-") {
 if (setting.arti && arti !== "-") {
   frontHTML += `<div style="margin-top: 0.3rem; font-size: 1.3rem;">${arti}</div>`;
 }
+  if (!frontHTML) frontHTML = `<div style="opacity:.6">(tidak ada data untuk ditampilkan)</div>`;
 
   cardFront.innerHTML = frontHTML;
 
@@ -447,15 +442,122 @@ function resetHafalan() {
   }
 }
 
+let savedSettings = JSON.parse(localStorage.getItem("kosakataSettings")) || {
+  kosakata: {
+    kosakata: true,   // default aktif
+    kanji: false,
+    arti: false,
+    showRandomizeFrontBtn: true // <- NEW
+  }
+};
+
 function saveSettings() {
   localStorage.setItem("kosakataSettings", JSON.stringify(savedSettings));
 }
+
+// migrasi jika storage lama belum punya flag baru
+if (!savedSettings.kosakata) savedSettings.kosakata = { kosakata: true, kanji: false, arti: false };
+if (savedSettings.kosakata.showRandomizeFrontBtn === undefined) {
+  savedSettings.kosakata.showRandomizeFrontBtn = true;
+  saveSettings();
+}
+
 
 function toggleSettings() {
   const isVisible = popupSettings.style.display === "block";
   if (!isVisible) renderSettingsPopup(); // ✅ UBAH INI
   popupSettings.style.display = overlay.style.display = isVisible ? "none" : "block";
 }
+
+function acakTampilanDepan() {
+  // pastikan ada data tampil
+  if (!filteredIndexes || filteredIndexes.length === 0) return;
+
+  // 1) Acak kartu (hindari index yang sama berurutan jika memungkinkan)
+  let newPos;
+  if (filteredIndexes.length === 1) {
+    newPos = 0;
+  } else {
+    do {
+      newPos = Math.floor(Math.random() * filteredIndexes.length);
+    } while (newPos === currentIndex);
+  }
+  currentIndex = newPos;
+
+  const dataIndex = filteredIndexes[currentIndex];
+  const data = kosakataData[dataIndex] || {};
+
+  // normalisasi field
+  const kosa = (data.kosakata || data.Kosakata || "").trim();
+  const kanji = (data.kanji || data.Kanji || "").trim();
+  const arti  = (data.arti  || data.Arti  || "").trim();
+
+  // 2) Tentukan kandidat field yang TIDAK kosong
+  const candidates = [];
+  if (kosa)  candidates.push("kosakata");
+  if (kanji) candidates.push("kanji");
+  if (arti)  candidates.push("arti");
+
+  // kalau semua kosong, fallback: tampilkan kosakata saja biar gak blank
+  if (candidates.length === 0) {
+    savedSettings.kosakata.kosakata = true;
+    savedSettings.kosakata.kanji = false;
+    savedSettings.kosakata.arti = false;
+    saveSettings();
+    if (typeof syncSettingsPopupCheckboxes === "function") syncSettingsPopupCheckboxes();
+    showCard();
+    return;
+  }
+
+  // 3) Pilih SATU field acak, usahakan tidak sama dengan field sebelumnya
+  let choice;
+  if (candidates.length === 1) {
+    choice = candidates[0];
+  } else {
+    const pool = lastRandomField ? candidates.filter(c => c !== lastRandomField) : candidates.slice();
+    choice = pool[Math.floor(Math.random() * pool.length)];
+  }
+  lastRandomField = choice;
+
+  // 4) Terapkan setting depan: hanya 1 field yang true
+  savedSettings.kosakata.kosakata = (choice === "kosakata");
+  savedSettings.kosakata.kanji    = (choice === "kanji");
+  savedSettings.kosakata.arti     = (choice === "arti");
+  saveSettings();
+
+  // sinkronkan popup bila sedang terbuka
+  if (typeof syncSettingsPopupCheckboxes === "function") syncSettingsPopupCheckboxes();
+
+  // render ulang kartu
+  showCard();
+}
+
+// Sinkronkan checkbox di popup jika popup sedang terbuka
+function syncSettingsPopupCheckboxes() {
+  const popup = document.getElementById("popupSettings");
+  if (!popup || popup.style.display !== "block") return;
+
+  const chkKosa  = document.getElementById("showFrontKosakata");
+  const chkKanji = document.getElementById("showFrontKanji");
+  const chkArti  = document.getElementById("showFrontArti");
+  const chkRnd   = document.getElementById("showRandomizeFrontBtn");
+
+  if (chkKosa) chkKosa.checked = !!savedSettings.kosakata.kosakata;
+  if (chkKanji) chkKanji.checked = !!savedSettings.kosakata.kanji;
+  if (chkArti) chkArti.checked = !!savedSettings.kosakata.arti;
+  if (chkRnd)  chkRnd.checked  = !!savedSettings.kosakata.showRandomizeFrontBtn;
+}
+
+
+function applyRandomizeFrontBtnVisibility() {
+  const btn = document.getElementById("randomizeFrontBtn");
+  if (!btn) return;
+  btn.style.display = savedSettings.kosakata.showRandomizeFrontBtn ? "inline-block" : "none";
+}
+
+document.getElementById("randomizeFrontBtn").addEventListener("click", acakTampilanDepan);
+applyRandomizeFrontBtnVisibility(); // <- panggil di inisialisasi
+
 
 function renderSettingsPopup() {
   const popup = document.getElementById("popupSettings");
@@ -464,14 +566,19 @@ function renderSettingsPopup() {
     <label><input type="checkbox" id="showFrontKosakata"> Tampilan kosakata (depan)</label><br>
     <label><input type="checkbox" id="showFrontKanji"> Tampilan kanji (depan)</label><br>
     <label><input type="checkbox" id="showFrontArti"> Tampilan arti (depan)</label><br>
+    <hr style="margin:10px 0;">
+    <label><input type="checkbox" id="showRandomizeFrontBtn"> Tampilkan tombol "Acak Tampilan"</label><br>
     <br>
-    <button id="popupCloseBtn" onclick="closeSettings()">Tutup</button>
+    <button id="popupCloseBtn">Tutup</button>
   `;
 
-  document.getElementById("showFrontKosakata").checked = savedSettings.kosakata.kosakata;
-  document.getElementById("showFrontKanji").checked = savedSettings.kosakata.kanji;
-  document.getElementById("showFrontArti").checked = savedSettings.kosakata.arti;
+  // set nilai awal dari savedSettings (DEFAULT: kosakata=true, tombol acak tampilan=true)
+  document.getElementById("showFrontKosakata").checked        = !!savedSettings.kosakata.kosakata;
+  document.getElementById("showFrontKanji").checked           = !!savedSettings.kosakata.kanji;
+  document.getElementById("showFrontArti").checked            = !!savedSettings.kosakata.arti;
+  document.getElementById("showRandomizeFrontBtn").checked    = !!savedSettings.kosakata.showRandomizeFrontBtn;
 
+  // listener perubahan
   document.getElementById("showFrontKosakata").addEventListener("change", (e) => {
     savedSettings.kosakata.kosakata = e.target.checked;
     saveSettings();
@@ -487,7 +594,25 @@ function renderSettingsPopup() {
     saveSettings();
     showCard();
   });
+  document.getElementById("showRandomizeFrontBtn").addEventListener("change", (e) => {
+    savedSettings.kosakata.showRandomizeFrontBtn = e.target.checked;
+    saveSettings();
+    applyRandomizeFrontBtnVisibility(); // tampil/sembunyikan tombol
+  });
+
+  // tombol tutup popup
+  document.getElementById("popupCloseBtn").addEventListener("click", toggleSettings);
 }
+
+// tambah listener untuk tombol acak tampilan:
+document.getElementById("showRandomizeFrontBtn").addEventListener("change", (e) => {
+  savedSettings.kosakata.showRandomizeFrontBtn = e.target.checked;
+  saveSettings();
+  applyRandomizeFrontBtnVisibility();
+});
+
+// tombol tutup popup
+document.getElementById("popupCloseBtn").addEventListener("click", toggleSettings);
 
 document.addEventListener("click", function (e) {
   if (e.target && e.target.id === "popupCloseBtn") {
