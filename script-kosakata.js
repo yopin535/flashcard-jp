@@ -242,7 +242,22 @@ function getQuizQuestion(data, mode) {
   return q;
 }
 
+function ensureQuizStyles() {
+  if (document.getElementById("quiz-style")) return;
+  const style = document.createElement("style");
+  style.id = "quiz-style";
+  style.textContent = `
+    .quiz-option { border: 2px solid transparent; transition: border-color .2s ease; }
+    .quiz-option.correct { border-color: #16a34a !important; }  /* hijau */
+    .quiz-option.incorrect { border-color: #dc2626 !important; }/* merah */
+    .quiz-option:disabled { opacity: .85; cursor: not-allowed; }
+  `;
+  document.head.appendChild(style);
+}
+
 function showQuizQuestion() {
+  ensureQuizStyles();
+
   const container = document.getElementById("quiz-container");
   const q = quizData[currentQuizIndex];
 
@@ -251,14 +266,14 @@ function showQuizQuestion() {
   while (options.length < 4) {
     const random = quizSourceData[Math.floor(Math.random() * quizSourceData.length)];
     const alt = getQuizQuestion(random, q.mode).answer;
-    if (!options.includes(alt)) options.push(alt);
+    if (alt && !options.includes(alt)) options.push(alt);
   }
   options = options.sort(() => Math.random() - 0.5);
 
-  // Buat tampilan soal
+  // Render
   container.innerHTML = `
     <h3>Soal ${currentQuizIndex + 1} dari ${quizData.length}</h3>
-    <p style="text-align: center; font-size: 1.2rem;"><strong>${q.question}</strong></p>
+    <p style="text-align:center;font-size:1.2rem;"><strong>${q.question}</strong></p>
     ${options.map(opt => `
       <button class="quiz-option" onclick="submitQuizAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
     `).join("")}
@@ -266,25 +281,39 @@ function showQuizQuestion() {
 }
 
 function submitQuizAnswer(selected) {
+  const DELAY_MS = 1000; // jeda sebelum lanjut
+  const container = document.getElementById("quiz-container");
   const current = quizData[currentQuizIndex];
   const correct = current.answer;
 
   const benar = selected === correct;
   if (benar) quizScore++;
 
-  quizAnswers.push({
-    question: current.question,
-    selected,
-    correct,
-    benar
+  // Kunci semua tombol dan beri highlight
+  const buttons = Array.from(container.querySelectorAll(".quiz-option"));
+  let btnSelected = null, btnCorrect = null;
+
+  buttons.forEach(btn => {
+    btn.disabled = true;
+    if (btn.textContent === selected) btnSelected = btn;
+    if (btn.textContent === correct) btnCorrect = btn;
   });
 
-  currentQuizIndex++;
-  if (currentQuizIndex < quizData.length) {
-    showQuizQuestion();
-  } else {
-    showQuizResult();
-  }
+  if (btnSelected) btnSelected.classList.add(benar ? "correct" : "incorrect");
+  if (!benar && btnCorrect) btnCorrect.classList.add("correct");
+
+  // Simpan jawaban
+  quizAnswers.push({ question: current.question, selected, correct, benar });
+
+  // Lanjut setelah jeda
+  setTimeout(() => {
+    currentQuizIndex++;
+    if (currentQuizIndex < quizData.length) {
+      showQuizQuestion();
+    } else {
+      showQuizResult();
+    }
+  }, DELAY_MS);
 }
 
 function exitQuizMode() {
