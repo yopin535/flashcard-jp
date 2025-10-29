@@ -12,7 +12,16 @@ let showFrontKosakata = true; // default AKTIF
 let showFrontKanji = false;
 let showFrontArti = false;
 
-let lastRandomField = null; // untuk menghindari field yang sama berurutan
+// Pelacakan pemakaian baris & kolom
+let rowUsage = {};        // key: dataIndex (index asli di kosakataData), value: berapa kali sudah ditampilkan
+let lastDataIndex = null; // baris terakhir yang dipakai
+let fieldUsage = {        // seberapa sering masing-masing kolom (field) dipakai di depan
+  kosakata: 0,
+  kanji: 0,
+  arti: 0
+};
+let lastRandomField = null; // field terakhir dipakai di depan
+
 
 let currentMode = "default"; // nilai bisa: "default", "flashcard", "quiz"
 
@@ -48,6 +57,7 @@ let quizMode = "random";
 
 let quizSourceData = [];
 let wasInFlashcardMode = false;
+
 
 // 🔁 Ambil daftar file dari spreadsheet
 fetch(`https://sheets.googleapis.com/v4/spreadsheets/${MASTER_LIST_ID}/values/daftar_file?key=${API_KEY}`)
@@ -367,6 +377,7 @@ function renderGrid() {
   // }
 
   // Jika ada data
+
   emptyMessage.classList.add("hidden");
   kanjiGrid.style.display = "grid";
 
@@ -499,36 +510,63 @@ function toggleSettings() {
 }
 
 function acakTampilanDepan() {
-  // pastikan ada data tampil
+  // Pastikan ada data yang sedang difilter
   if (!filteredIndexes || filteredIndexes.length === 0) return;
 
-  // 1) Acak kartu (hindari index yang sama berurutan jika memungkinkan)
-  let newPos;
-  if (filteredIndexes.length === 1) {
-    newPos = 0;
-  } else {
-    do {
-      newPos = Math.floor(Math.random() * filteredIndexes.length);
-    } while (newPos === currentIndex);
+  // === 1. PILIH BARIS (KOSAKATA) SECARA ADIL ===
+  // Hitung usage tiap kandidat baris
+  // filteredIndexes berisi index asli ke kosakataData
+  let candidatesRowInfo = filteredIndexes.map(idx => {
+    const usage = rowUsage[idx] || 0;
+    return { idx, usage };
+  });
+
+  // Cari usage minimum
+  let minUsage = Math.min(...candidatesRowInfo.map(r => r.usage));
+
+  // Ambil hanya baris-baris dengan pemakaian paling sedikit
+  let priorityRows = candidatesRowInfo.filter(r => r.usage === minUsage);
+
+  // Usahakan jangan pilih baris yang sama dengan baris terakhir,
+  // kalau masih ada alternatif dengan usage sama
+  if (priorityRows.length > 1 && lastDataIndex !== null) {
+    const alt = priorityRows.filter(r => r.idx !== lastDataIndex);
+    if (alt.length > 0) {
+      priorityRows = alt;
+    }
   }
-  currentIndex = newPos;
 
-  const dataIndex = filteredIndexes[currentIndex];
+  // Pilih 1 baris secara acak dari kandidat prioritas
+  const chosenRow = priorityRows[Math.floor(Math.random() * priorityRows.length)];
+  const dataIndex = chosenRow.idx;
+  lastDataIndex = dataIndex;
+
+  // Update posisi currentIndex supaya navigasi flashcard lain (next/prev) tetap nyambung
+  // currentIndex adalah index di filteredIndexes, jadi kita cari posisi dataIndex di situ
+  const newPosInFiltered = filteredIndexes.indexOf(dataIndex);
+  if (newPosInFiltered !== -1) {
+    currentIndex = newPosInFiltered;
+  }
+
+  // Ambil data baris terpilih
   const data = kosakataData[dataIndex] || {};
-
-  // normalisasi field
   const kosa = (data.kosakata || data.Kosakata || "").trim();
   const kanji = (data.kanji || data.Kanji || "").trim();
   const arti  = (data.arti  || data.Arti  || "").trim();
 
-  // 2) Tentukan kandidat field yang TIDAK kosong
-  const candidates = [];
-  if (kosa)  candidates.push("kosakata");
-  if (kanji) candidates.push("kanji");
-  if (arti)  candidates.push("arti");
+  // Setelah baris dipilih, tandai baris ini sudah "kepakai"
+  rowUsage[dataIndex] = (rowUsage[dataIndex] || 0) + 1;
 
-  // kalau semua kosong, fallback: tampilkan kosakata saja biar gak blank
-  if (candidates.length === 0) {
+
+  // === 2. PILIH FIELD (KOLOM) SECARA ADIL ===
+  // Kumpulkan field yang tidak kosong untuk baris ini
+  const availableFields = [];
+  if (kosa)  availableFields.push("kosakata");
+  if (kanji) availableFields.push("kanji");
+  if (arti)  availableFields.push("arti");
+
+  // Kalau semua kosong (kasus ekstrem), fallback ke kosakata biar gak blank
+  if (availableFields.length === 0) {
     savedSettings.kosakata.kosakata = true;
     savedSettings.kosakata.kanji = false;
     savedSettings.kosakata.arti = false;
@@ -538,26 +576,41 @@ function acakTampilanDepan() {
     return;
   }
 
-  // 3) Pilih SATU field acak, usahakan tidak sama dengan field sebelumnya
-  let choice;
-  if (candidates.length === 1) {
-    choice = candidates[0];
-  } else {
-    const pool = lastRandomField ? candidates.filter(c => c !== lastRandomField) : candidates.slice();
-    choice = pool[Math.floor(Math.random() * pool.length)];
-  }
-  lastRandomField = choice;
+  // Cari usage terkecil di antara field yang tersedia
+  let minFieldUsage = Math.min(...availableFields.map(f => fieldUsage[f]));
 
-  // 4) Terapkan setting depan: hanya 1 field yang true
-  savedSettings.kosakata.kosakata = (choice === "kosakata");
-  savedSettings.kosakata.kanji    = (choice === "kanji");
-  savedSettings.kosakata.arti     = (choice === "arti");
+  // Kandidat field prioritas = yang usage-nya sama dengan terkecil
+  let priorityFields = availableFields.filter(f => fieldUsage[f] === minFieldUsage);
+
+  // Coba hindari field yang sama persis dengan field terakhir yang dipakai,
+  // kalau masih ada alternatif valid
+  if (priorityFields.length > 1 && lastRandomField) {
+    const altFields = priorityFields.filter(f => f !== lastRandomField);
+    if (altFields.length > 0) {
+      priorityFields = altFields;
+    }
+  }
+
+  // Pilih satu field final dari priorityFields
+  const chosenField = priorityFields[Math.floor(Math.random() * priorityFields.length)];
+  lastRandomField = chosenField;
+
+  // Update usage field terpilih
+  fieldUsage[chosenField] = (fieldUsage[chosenField] || 0) + 1;
+
+  // === 3. APPLY KE PENGATURAN FRONT CARD ===
+  // Hanya field terpilih yang akan tampil di depan
+  savedSettings.kosakata.kosakata = (chosenField === "kosakata");
+  savedSettings.kosakata.kanji    = (chosenField === "kanji");
+  savedSettings.kosakata.arti     = (chosenField === "arti");
   saveSettings();
 
-  // sinkronkan popup bila sedang terbuka
-  if (typeof syncSettingsPopupCheckboxes === "function") syncSettingsPopupCheckboxes();
+  // Sinkronkan popup (jika popup lagi kebuka)
+  if (typeof syncSettingsPopupCheckboxes === "function") {
+    syncSettingsPopupCheckboxes();
+  }
 
-  // render ulang kartu
+  // === 4. TAMPILKAN KARTU BARU DENGAN PENGATURAN BARU ===
   showCard();
 }
 
@@ -692,3 +745,5 @@ function startAutoFlip() {
 function stopAutoFlip() {
   if (autoTimer) clearInterval(autoTimer);
 }
+
+// Inisialisasiasd 
