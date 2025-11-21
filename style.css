@@ -104,7 +104,7 @@ body {
 
 .card {
   width: 300px;
-  height: 500px;
+  height: 450px;
   perspective: 1000px;
   margin-bottom: 1rem;
   display: flex;
@@ -473,7 +473,7 @@ input[type="number"] {
 }
 
 /* Responsive */
-@media (max-width: 400px) {
+@media (max-width: 350px) {
   .flashcard-header {
     flex-direction: column;
     align-items: center;
@@ -484,7 +484,7 @@ input[type="number"] {
     width: 90vw;
     max-width: 300px;
     height: 70vh;
-    max-height: 500px;
+    max-height: 350px;
   }
 
   .front {
@@ -494,13 +494,13 @@ input[type="number"] {
   .nav-buttons,
   .label-controls,
   .utility-button {
-    flex-direction: column;
+    /* flex-direction: column; */
     gap: 0.5rem;
     width: 100%;
   }
 
   button {
-    width: 100%;
+    /* width: 100%; */
     max-width: 300px;
   }
 
