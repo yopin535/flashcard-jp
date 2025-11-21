@@ -151,6 +151,7 @@ loadButton.onclick = () => {
   flashcardSection.style.display = "flex";
   currentIndex = 0;
   applyFilter();
+  resetFairChanceCounters();
   showCard();
 };
 
@@ -161,11 +162,14 @@ document.getElementById("backBtn").onclick = () => {
 };
 document.getElementById("prevBtn").onclick = () => { if (currentIndex > 0) { currentIndex--; showCard(); } };
 document.getElementById("nextBtn").onclick = () => { if (currentIndex < filteredIndexes.length - 1) { currentIndex++; showCard(); } };
-document.getElementById("shuffleBtn").onclick = () => {
-  filteredIndexes.sort(() => Math.random() - 0.5);
-  currentIndex = 0;
-  showCard();
-};
+const shuffleBtn = document.getElementById("shuffleBtn");
+if (shuffleBtn) {
+  shuffleBtn.onclick = (e) => {
+    e.preventDefault();
+    pickFairNextCard();
+  };
+}
+
 document.getElementById("markKnown").onclick = () => {
   const i = filteredIndexes[currentIndex];
   hafalStatusMap[i] = "known"; saveHafalan(); showCard();
@@ -744,6 +748,51 @@ function startAutoFlip() {
 
 function stopAutoFlip() {
   if (autoTimer) clearInterval(autoTimer);
+}
+
+function pickFairNextCard() {
+  if (!filteredIndexes || filteredIndexes.length === 0) return;
+
+  // Buat list {idx, usage}
+  const info = filteredIndexes.map(idx => ({ idx, usage: rowUsage[idx] || 0 }));
+  const minUsage = Math.min(...info.map(x => x.usage));
+
+  // Ambil pool yang usage-nya paling kecil
+  let pool = info.filter(x => x.usage === minUsage);
+
+  // Hindari mengulang baris sama berurutan jika masih ada pilihan lain
+  if (pool.length > 1 && lastDataIndex !== null) {
+    const alt = pool.filter(x => x.idx !== lastDataIndex);
+    if (alt.length > 0) pool = alt;
+  }
+
+  // Pilih satu dari pool
+  const chosen = pool[Math.floor(Math.random() * pool.length)];
+  const dataIndex = chosen.idx;
+
+  // Update usage + jejak
+  rowUsage[dataIndex] = (rowUsage[dataIndex] || 0) + 1;
+  lastDataIndex = dataIndex;
+
+  // Sinkronkan posisi ke indeks tampilan
+  const posInFiltered = filteredIndexes.indexOf(dataIndex);
+  if (posInFiltered !== -1) currentIndex = posInFiltered;
+
+  // Tampilkan kartu
+  showCard();
+}
+
+function resetFairChanceCounters() {
+  rowUsage = {};
+  lastDataIndex = null;
+}
+
+// Panggil ini SETELAH data siap (mis. di akhir load data / applyFilter)
+function onDataLoadedOrFiltered() {
+  // ...logika load/applyFilter kamu...
+  resetFairChanceCounters();
+  currentIndex = 0;
+  showCard();
 }
 
 // Inisialisasiasd 
