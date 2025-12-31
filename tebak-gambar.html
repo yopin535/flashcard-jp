@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Tebak Gambar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css?v=7192025" />
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Tebak Gambar</h1>
+</header>
+
+<!-- PANEL PILIH DATA -->
+<section class="data-panel">
+  <div class="form-group">
+    <label>Pilih File</label>
+    <select id="fileSelector">
+      <option value="">-- Pilih File --</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Pilih Sheet</label>
+    <select id="sheetSelector">
+      <option value="">-- Pilih Sheet --</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Limit Data</label>
+    <input type="number" id="limitInput" value="50" min="1">
+    <span id="totalDataInfo" class="data-info"></span>
+  </div>
+</section>
+
+<div class="quiz-type">
+  <label>
+    <input type="radio" name="quizType" value="kosakata" checked>
+    Tebak Kosakata
+  </label>
+
+  <label>
+    <input type="radio" name="quizType" value="kanji">
+    Tebak Kanji
+  </label>
+
+  <label>
+    <input type="radio" name="quizType" value="arti">
+    Tebak Arti
+  </label>
+</div>
+
+<button id="loadButton" style="margin: 10px;">Load Data</button>
+
+<button id="startQuizBtn" style="display:none;">Mulai Quiz</button>
+
+<div class="page-container">
+
+  <!-- AREA QUIZ -->
+  <div id="quizSection" class="quiz-page" style="display:none">
+
+    <button id="fullscreenBtn" class="btn small">
+      Layar Penuh
+    </button>
+
+    <div class="quiz-card">
+
+      <div id="progressText" class="quiz-progress"></div>
+
+      <div class="quiz-image-wrapper">
+        <div id="imageSkeleton" class="image-skeleton"></div>
+        <img id="quizImage" style="display:none;" />
+      </div>
+
+      <p id="questionText" class="quiz-question"></p>
+
+      <div id="choices" class="quiz-choices"></div>
+
+      <button id="nextQuestionBtn" class="btn primary" disabled>
+        Next
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<p id="statusText"></p>
+
+<script src="script-tebak-gambar.js"></script>
+</body>
+</html>
+
