@@ -118,7 +118,7 @@ loadButton.addEventListener("click", () => {
       const headers = values[0].map(h => h.toLowerCase().trim());
       const rows = values.slice(1);
 
-      quizData = rows.map(row => {
+      const parsedData = rows.map(row => {
         const obj = {};
         headers.forEach((h, i) => {
           obj[h] = row[i] || "";
@@ -130,9 +130,13 @@ loadButton.addEventListener("click", () => {
           arti: obj["arti"] || "",
           gambar: obj["gambar"] || ""
         };
-      })
-      .filter(d => d.gambar) // 🔥 hanya yang ada gambarnya
-      .slice(0, limit);
+      }).filter(d => d.gambar); // hanya yang ada gambar
+
+      // 🔀 ACAK URUTAN DI SINI
+      const shuffled = shuffleArray([...parsedData]);
+
+      // 🎯 BARU BATASI LIMIT
+      quizData = shuffled.slice(0, limit);
 
       if (quizData.length === 0) {
         alert("Tidak ada data bergambar");
@@ -254,11 +258,12 @@ function generateQuestion() {
   });
 }
 
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+  return arr;
 }
 
 function checkAnswer(button, selected, correct) {
