@@ -52,6 +52,17 @@ body {
   margin-top: 1rem;
 }
 
+/* ✅ Tambahan untuk gambar flashcard */
+.card-image {
+  align-self: anchor-center;
+  max-width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 /* #kanjiGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
