@@ -1,3 +1,4 @@
+
 const API_KEY = "AIzaSyAHX99hr1pn46Iar5oW3hzsK_2I7pKgUMA";
 const MASTER_LIST_ID = "1TdRFPDT_j_9i7h2IptHqkvlsD-r5DwOh3xh--0mAlDA";
 
@@ -445,23 +446,35 @@ function showCard() {
   const arti = data.arti || data.Arti || "-";
   const kalimat = data["contoh kalimat"] || data.Kalimat || "-";
 
+  // 👇 TAMBAHKAN BARIS INI 👇
+  const gambar = data.gambar || data.Gambar || "";
+
   const setting = savedSettings.kosakata;
   let frontHTML = "";
 
-if (setting.kosakata && kosa !== "-") {
-  frontHTML += `<div style="font-size: 1.8rem;">${kosa}</div>`;
-}
-if (setting.kanji && hira !== "-") {
-  frontHTML += `<div style="margin-top: 0.5rem; font-size: 1.8rem;">${hira}</div>`;
-}
-if (setting.arti && arti !== "-") {
-  frontHTML += `<div style="margin-top: 0.3rem; font-size: 1.3rem;">${arti}</div>`;
-}
+  // ✅ Render gambar di kartu depan jika setting aktif dan gambar tersedia
+  if (setting.gambar && gambar !== "") {
+    frontHTML += `<img src="${gambar}" class="card-image" alt="Visualisasi ${kosa}" />`;
+  }
+
+  if (setting.kosakata && kosa !== "-") {
+    frontHTML += `<div style="font-size: 1.8rem;">${kosa}</div>`;
+  }
+  if (setting.kanji && hira !== "-") {
+    frontHTML += `<div style="margin-top: 0.5rem; font-size: 1.8rem;">${hira}</div>`;
+  }
+  if (setting.arti && arti !== "-") {
+    frontHTML += `<div style="margin-top: 0.3rem; font-size: 1.3rem;">${arti}</div>`;
+  }
   if (!frontHTML) frontHTML = `<div style="opacity:.6">(tidak ada data untuk ditampilkan)</div>`;
 
   cardFront.innerHTML = frontHTML;
 
+  // ✅ Render gambar di kartu belakang (selalu tampil jika ada)
+  let backImgHTML = (gambar !== "") ? `<img src="${gambar}" class="card-image" alt="Visualisasi ${kosa}" />` : '';
+
   cardBack.innerHTML = `
+    ${backImgHTML}
     <div class="center-info" style="font-size: 1.8rem;">${kosa}</div>
     <div class="center-info" style="font-size: 1.3rem;">${hira}</div>
     <div class="center-info" style="font-size: 1rem;">${arti}</div>
@@ -491,6 +504,7 @@ let savedSettings = JSON.parse(localStorage.getItem("kosakataSettings")) || {
     kosakata: true,   // default aktif
     kanji: false,
     arti: false,
+    gambar: true,
     showRandomizeFrontBtn: true // <- NEW
   }
 };
@@ -623,11 +637,13 @@ function syncSettingsPopupCheckboxes() {
   const popup = document.getElementById("popupSettings");
   if (!popup || popup.style.display !== "block") return;
 
+  const chkGambar = document.getElementById("showFrontGambar"); // ✅ Tambahan
   const chkKosa  = document.getElementById("showFrontKosakata");
   const chkKanji = document.getElementById("showFrontKanji");
   const chkArti  = document.getElementById("showFrontArti");
   const chkRnd   = document.getElementById("showRandomizeFrontBtn");
 
+  if (chkGambar) chkGambar.checked = !!savedSettings.kosakata.gambar; // ✅ Tambahan
   if (chkKosa) chkKosa.checked = !!savedSettings.kosakata.kosakata;
   if (chkKanji) chkKanji.checked = !!savedSettings.kosakata.kanji;
   if (chkArti) chkArti.checked = !!savedSettings.kosakata.arti;
@@ -649,6 +665,7 @@ function renderSettingsPopup() {
   const popup = document.getElementById("popupSettings");
   popup.innerHTML = `
     <h3>Pengaturan Tampilan (Depan)</h3>
+    <label><input type="checkbox" id="showFrontGambar"> Tampilan gambar (depan)</label><br>
     <label><input type="checkbox" id="showFrontKosakata"> Tampilan kosakata (depan)</label><br>
     <label><input type="checkbox" id="showFrontKanji"> Tampilan kanji (depan)</label><br>
     <label><input type="checkbox" id="showFrontArti"> Tampilan arti (depan)</label><br>
@@ -659,10 +676,18 @@ function renderSettingsPopup() {
   `;
 
   // set nilai awal dari savedSettings (DEFAULT: kosakata=true, tombol acak tampilan=true)
+  document.getElementById("showFrontGambar").checked          = !!savedSettings.kosakata.gambar; // ✅ Tambahan
   document.getElementById("showFrontKosakata").checked        = !!savedSettings.kosakata.kosakata;
   document.getElementById("showFrontKanji").checked           = !!savedSettings.kosakata.kanji;
   document.getElementById("showFrontArti").checked            = !!savedSettings.kosakata.arti;
   document.getElementById("showRandomizeFrontBtn").checked    = !!savedSettings.kosakata.showRandomizeFrontBtn;
+
+  // ✅ Tambahan listener perubahan untuk gambar
+  document.getElementById("showFrontGambar").addEventListener("change", (e) => {
+    savedSettings.kosakata.gambar = e.target.checked;
+    saveSettings();
+    showCard();
+  });
 
   // listener perubahan
   document.getElementById("showFrontKosakata").addEventListener("change", (e) => {
